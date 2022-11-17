@@ -35,33 +35,40 @@ const styles = {
     'redBG': '\x1B[41m',
     'yellowBG': '\x1B[43m'
 };
+//日志模块
+const log = (text) => {
+    console.log(text);
+    let date = new Date();
+    let file = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDay()}`;
+    fs.appendFileSync(`./logs/${file}.log`, text + '\n');
+}
 //设置消息接收模块
 let lastTimeStamp = 0;
 const parseTime = (timestamp) => new Date(timestamp).toLocaleString();
 const getEvent = (time) => {
     try {
         superagent.get(`${dynmapMain}/up/world/world/${new Date().getTime() - time}`).end((err, res) => {
-            if (err) return console.log(styles['red'] + err.message + styles['white']);
+            if (err) return log(styles['red'] + err.message + styles['white']);
             let json = JSON.parse(res.text);
             let tempStamp = lastTimeStamp;
             if (json.updates != null) {
                 for (let i = 0; i < json.updates.length; i++) {
                     if (json.updates[i].type == 'chat' && json.updates[i].timestamp > lastTimeStamp) {
                         if (json.updates[i].source == 'player') {
-                            console.log(`[${parseTime(json.updates[i].timestamp)}] <${json.updates[i].account}> ${json.updates[i].message}`);
+                            log(`[${parseTime(json.updates[i].timestamp)}] <${json.updates[i].account}> ${json.updates[i].message}`);
                             tempStamp = Math.max(tempStamp, json.updates[i].timestamp);
                         }
                         if (json.updates[i].source == 'web') {
-                            console.log(`${styles['green']}[${parseTime(json.updates[i].timestamp)}] ${json.updates[i].playerName}(卫星上) ${json.updates[i].message}${styles['white']}`);
+                            log(`${styles['green']}[${parseTime(json.updates[i].timestamp)}] ${json.updates[i].playerName}(卫星上) ${json.updates[i].message}${styles['white']}`);
                             tempStamp = Math.max(tempStamp, json.updates[i].timestamp);
                         }
                     }
                     if (json.updates[i].type == 'playerjoin' && json.updates[i].timestamp > lastTimeStamp) {
-                        console.log(`${styles['yellow']}[${parseTime(json.updates[i].timestamp)}] ${json.updates[i].account} 加入了服务器${styles['white']}`);
+                        log(`${styles['yellow']}[${parseTime(json.updates[i].timestamp)}] ${json.updates[i].account} 加入了服务器${styles['white']}`);
                         tempStamp = Math.max(tempStamp, json.updates[i].timestamp);
                     }
                     if (json.updates[i].type == 'playerquit' && json.updates[i].timestamp > lastTimeStamp) {
-                        console.log(`${styles['yellow']}[${parseTime(json.updates[i].timestamp)}] ${json.updates[i].account} 退出了服务器${styles['white']}`);
+                        log(`${styles['yellow']}[${parseTime(json.updates[i].timestamp)}] ${json.updates[i].account} 退出了服务器${styles['white']}`);
                         tempStamp = Math.max(tempStamp, json.updates[i].timestamp);
                     }
                 }
@@ -70,7 +77,7 @@ const getEvent = (time) => {
             lastDataPack = json;
         });
     } catch (err) {
-        console.log(styles['red'] + err.message + styles['white']);
+        log(styles['red'] + err.message + styles['white']);
     }
 }
 //设置输入消息模块
@@ -90,7 +97,7 @@ readline.createInterface({
 }).on('line', (input) => {
     if (input.startsWith('/')) {
         let ret = onCommand(input.substring(1));
-        if (ret != null) console.log(ret);
+        if (ret != null) log(ret);
     }
     else
         try {
@@ -100,7 +107,7 @@ readline.createInterface({
                 Accept: 'application/json, text/javascript',
                 'Content-Type': 'application/json; charset=UTF-8'
             }).end((err, res) => {
-                if (err) return console.log(styles['red'] + '登录失败！' + styles['white']);
+                if (err) return log(styles['red'] + '登录失败！' + styles['white']);
                 let cookie = res.headers['set-cookie'][0].split(';')[0];
                 superagent.post(`${dynmapMain}/up/sendmessage`).set({
                     Accept: 'application/json, text/javascript',
@@ -108,11 +115,11 @@ readline.createInterface({
                     'Content-Type': 'application/json; charset=UTF-8'
                 }).send({ name: '', message: input }).then((res) => {
                     let error = JSON.parse(res.text).error;
-                    if (error != 'none') console.log(styles['red'] + '消息发送失败：' + error + styles['white']);
+                    if (error != 'none') log(styles['red'] + '消息发送失败：' + error + styles['white']);
                 });
             });
         } catch (err) {
-            console.log(styles['red'] + err.message + styles['white']);
+            log(styles['red'] + err.message + styles['white']);
         }
 });
 //主代码
